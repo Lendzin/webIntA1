@@ -24,22 +24,22 @@ module.exports.routes = {
   },
   //ITEM CONTROLLER
 
-  'get /item/euclidean': {
+  'get /item/euclidean/:user': {
     controller: 'ItemsController',
     action: 'euclidean'
   },
 
-  'get /item/pearson': {
+  'get /item/pearson/:user': {
     controller: 'ItemsController',
     action: 'pearson'
   },
 
-  'get /item/itembased': {
+  'get /item/itembased/:user': {
     controller: 'ItemsController',
     action: 'itembased'
   },
 
-  'get /item/userbased': {
+  'get /item/userbased/:user': {
     controller: 'ItemsController',
     action: 'userbased'
   },
