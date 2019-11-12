@@ -26,10 +26,8 @@ module.exports = {
     const user = req.param('user');
 
     let usersJson = {};
-    console.log(req.options.locals.size);
     if (req.options.locals.size === 'large') {
       usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge);
-      console.log(usersJson);
     } else {
       usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsers);
     }
@@ -43,7 +41,6 @@ module.exports = {
       if ( userId !== 0) {
         if (req.options.locals.size === 'large') {
           ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatingsLarge);
-          console.log(ratingsJson)
           moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMoviesLarge);
         } else {
           ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatings);

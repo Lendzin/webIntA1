@@ -4,7 +4,7 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-community/dist/styles/ag-grid.css';
 import 'ag-grid-community/dist/styles/ag-theme-balham.css';
 
-export default class TableComponent extends Component {
+export default class UserSimIndexTable extends Component {
 	constructor(props) {
 		super(props);
         this.state = {
@@ -18,16 +18,17 @@ export default class TableComponent extends Component {
         <div 
             className="ag-theme-balham"
             style={{ 
-            height: '500px', 
+            height: `${this.props.data.length * 33}px`, 
             width: '600px' }} 
         >
+            {this.props.data.length !== 0 ? <p>Recommended Movies Table:</p> : <span></span>}
             <AgGridReact
             columnDefs={[{
-                headerName: "User", field: "user"
+                headerName: "Movie", field: "value", cellRenderer: movie => {return movie.data.MovieId.Title}
                 }, {
-                headerName: "SimIndex", field: "simIndex"
+                headerName: "Id", field: "value", cellRenderer: movie => {return movie.data.MovieId.MovieId}
                 }, {
-                headerName: "Recommendation", field: "value", cellRenderer: user => { return user.data.recommendationOrder.length !== 0 ? user.data.recommendationOrder[0].Title : 'None'}
+                headerName: "Score", field: "RecommendValue"
             }]}
             rowData={this.props.data}>
             </AgGridReact>

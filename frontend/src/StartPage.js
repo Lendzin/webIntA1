@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Button, Row, Col, Container, Form } from 'react-bootstrap';
-import  TableComponent from './TableComponent';
+import UserSimIndexTable from './UserSimIndexTable';
+import RecommendationTable from './RecommendationTable'
 
 const uuid = require('uuid/v4')
 const requestUsers = async ()  => {
@@ -62,27 +63,12 @@ export default class StartPage extends Component {
 		}
 	}
 	
-	renderRecommendations = () => {
-		return (
-			<>
-				<Form>
-					Recommended Movies:
-					<Form.Control as="select" onChange={() => {}} style={{ width: 300 }}>
-						{this.state.data.recommended.length !== 0 ? this.state.data.recommended.map(movie => {
-							return <option key={movie.MovieId.MovieId}>{movie.MovieId.Title}, Rating: {movie.RecommendValue.toFixed(4)}</option>
-						}) : <option>No Recommendations</option>}
-		            </Form.Control>
-				</Form>
-				<Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
-			</>
-		)
-	}
-
     renderTable = () => {
         return (
 			<>
-			{this.renderRecommendations()}
-            <TableComponent data={this.state.data.result}> </TableComponent>
+			<RecommendationTable data={this.state.data.recommended}></RecommendationTable>
+			<Row style={{ marginTop: 30, marginBottom: 10 }}></Row>
+            <UserSimIndexTable data={this.state.data.result}> </UserSimIndexTable>
 			</>
         )
 	}
