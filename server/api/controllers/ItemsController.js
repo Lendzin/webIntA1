@@ -8,6 +8,9 @@ const csv = require('csvtojson');
 const pathMovies = './../../movies_example/movies.csv';
 const pathRatings = './../../movies_example/ratings.csv';
 const pathUsers = './../../movies_example/users.csv';
+const pathMoviesLarge = './../../movies_large/movies.csv';
+const pathRatingsLarge = './../../movies_large/ratings.csv';
+const pathUsersLarge = './../../movies_large/users.csv';
 
 module.exports = {
 
@@ -15,18 +18,38 @@ module.exports = {
     return res.status(200).send(await csv({delimiter: ';'}).fromFile(__dirname + pathUsers));
   },
 
-  euclidean: async function(req, res) {
+  getLargeUsers: async function(req, res) {
+    return res.status(200).send(await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge));
+  },
+
+  getRecommendations: async function(req, res) {
     const user = req.param('user');
 
-    let usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsers);
+    let usersJson = {};
+    console.log(req.options.locals.size);
+    if (req.options.locals.size === 'large') {
+      usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge);
+      console.log(usersJson);
+    } else {
+      usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsers);
+    }
 
     if (user) {
 
       let userId = getUserId(user, usersJson);
+      let ratingsJson = {};
+      let moviesJson = {};
 
       if ( userId !== 0) {
-        let ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatings);
-        let moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMovies);
+        if (req.options.locals.size === 'large') {
+          ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatingsLarge);
+          console.log(ratingsJson)
+          moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMoviesLarge);
+        } else {
+          ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatings);
+          moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMovies);
+        }
+
 
         let userRatedMovies = getRatedMoviesForUser(userId, ratingsJson);
         let otherUsers = getOtherUsers(user, usersJson);
@@ -35,18 +58,26 @@ module.exports = {
 
         let results = [];
         let sumSimiliarty = 0;
-        let sumWeighted = 0;
 
         otherUsers.forEach(user => {
-          let eucValue = getEuclidean(userId, user.UserId, ratingsJson);
+
+          let simIndex = 0;
+
+          if (req.options.locals.act === 'euclidean') {
+            simIndex = getEuclidean(userId, user.UserId, ratingsJson);
+          }
+          if (req.options.locals.act === 'pearson') {
+            simIndex = getPearson(userId, user.UserId, ratingsJson);
+          }
+
           let userName = getUserName(user.UserId, usersJson);
           let otherUserRatedMovies = getRatedMoviesForUser(user.UserId, ratingsJson);
           let moviesNotRated = getMoviesNotRated(userRatedMovies, otherUserRatedMovies);
-          let weightedScores = getWeightedScoreForMovies(eucValue, moviesNotRated)
+          let weightedScores = getWeightedScoreForMovies(simIndex, moviesNotRated)
           moviesNotRated.sort(sortHighestRatingFirst);
-          sumSimiliarty += eucValue;
+          sumSimiliarty += simIndex;
           let recommendationOrder = getMoviesWithNames(moviesNotRated, moviesJson);
-          results.push({user: userName, eucValue: eucValue, recommendationOrder: recommendationOrder, weightedScores: weightedScores})
+          results.push({user: userName, simIndex: simIndex, recommendationOrder: recommendationOrder, weightedScores: weightedScores})
           results.sort(sortHighestEuclValueFirst);
         });
 
@@ -58,9 +89,13 @@ module.exports = {
             if (user.weightedScores.filter(mov => mov.MovieId === movie.MovieId)) {
               let actualMovie = user.weightedScores.find(movie2 => movie2.MovieId === movie.MovieId);
               if (actualMovie) {
-                weightedScore+= actualMovie.WeightedScore;
+                if (actualMovie.WeightedScore > 0) { //pearson check
+                  weightedScore+= actualMovie.WeightedScore;
+                } else {
+                  sim -= user.simIndex;
+                }
               } else {
-                sim -= user.eucValue;
+                sim -= user.simIndex;
               }
               
             }
@@ -74,9 +109,6 @@ module.exports = {
     }
 
   },
-  pearson: async function(req, res) {
-    return res.status(200).json({test: 'pearson'});
-  },
   itembased: async function(req, res) {
     return res.status(200).json({test: 'itembased'});
   },
@@ -85,9 +117,9 @@ module.exports = {
   },
 };
 
-function getWeightedScoreForMovies(eucValue, moviesNotRated) {
+function getWeightedScoreForMovies(simIndex, moviesNotRated) {
   return moviesNotRated.map(movie => {
-    return {MovieId: movie.MovieId, WeightedScore: movie.Rating*eucValue}
+    return {MovieId: movie.MovieId, WeightedScore: movie.Rating*simIndex}
   });
 }
 
@@ -104,10 +136,10 @@ function sortHighestRecommendValue(a, b) {
 
 
 function sortHighestEuclValueFirst(a, b) {
-  if (a.eucValue > b.eucValue) {
+  if (a.simIndex > b.simIndex) {
     return -1;
   } else {
-    if (a.eucValue < b.eucValue) {
+    if (a.simIndex < b.simIndex) {
       return 1;
     }
     return 0;
@@ -189,6 +221,38 @@ function getMovieFromId(id, movies) {
   return (movie === undefined) ? 0 : movie;
 }
 
+function getPearson(userA, userB, ratings) {
+  let aRatedMovies = getRatedMoviesForUser(userA, ratings);
+  let bRatedMovies = getRatedMoviesForUser(userB, ratings);
+  let sum1 = 0;
+  let sum2 = 0;
+  let sum1Sq = 0;
+  let sum2Sq = 0;
+  let pSum = 0;
+  let n = 0;
+  let den = 0;
+
+  aRatedMovies.forEach(aMovie => {
+    bRatedMovies.forEach(bMovie => {
+      if (aMovie.MovieId === bMovie.MovieId) {
+        sum1 += Number(aMovie.Rating);
+        sum2 += Number(bMovie.Rating);
+        sum1Sq += Math.pow(Number(aMovie.Rating), 2);
+        sum2Sq += Math.pow(Number(bMovie.Rating), 2);
+        pSum += aMovie.Rating * bMovie.Rating;
+        n += 1;
+      }
+    });
+  });
+
+  if (n === 0) {
+    return 0;
+  }
+
+  num = pSum - (sum1 * sum2 / n);
+  den = Math.sqrt((sum1Sq - Math.pow(sum1, 2) / n) * (sum2Sq - Math.pow(sum2, 2) / n ));
+  return num/den;
+}
 
 function getEuclidean(userA, userB, ratings) {
   let aRatedMovies = getRatedMoviesForUser(userA, ratings);

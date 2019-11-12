@@ -28,14 +28,45 @@ module.exports.routes = {
     action: 'getUsers'
   },
 
+  'get /item/large/users': {
+    controller: 'ItemsController',
+    action: 'getLargeUsers'
+  },
+
   'get /item/euclidean/:user': {
     controller: 'ItemsController',
-    action: 'euclidean'
+    action: 'getRecommendations',
+    locals: {
+      size: 'demo',
+      act: 'euclidean'
+    }
   },
 
   'get /item/pearson/:user': {
     controller: 'ItemsController',
-    action: 'pearson'
+    action: 'getRecommendations',
+    locals: {
+      size: 'demo',
+      act: 'pearson'
+    }
+  },
+
+  'get /item/large/pearson/:user': {
+    controller: 'ItemsController',
+    action: 'getRecommendations',
+    locals: {
+      size: 'large',
+      act: 'pearson'
+    }
+  },
+
+  'get /item/large/euclidean/:user': {
+    controller: 'ItemsController',
+    action: 'getRecommendations',
+    locals: {
+      size: 'large',
+      act: 'euclidean'
+    }
   },
 
   'get /item/itembased/:user': {

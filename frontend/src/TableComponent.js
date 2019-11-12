@@ -21,12 +21,11 @@ export default class TableComponent extends Component {
             height: '500px', 
             width: '600px' }} 
         >
-            {console.log(this.props.data[0])}
             <AgGridReact
             columnDefs={[{
                 headerName: "User", field: "user"
                 }, {
-                headerName: "EucValue", field: "eucValue"
+                headerName: "SimIndex", field: "simIndex"
                 }, {
                 headerName: "Recommendation", field: "value", cellRenderer: user => { return user.data.recommendationOrder.length !== 0 ? user.data.recommendationOrder[0].Title : 'None'}
             }]}
