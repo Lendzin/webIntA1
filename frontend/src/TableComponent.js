@@ -8,36 +8,29 @@ export default class TableComponent extends Component {
 	constructor(props) {
 		super(props);
         this.state = {
-         columnDefs: [{
-            headerName: "Make", field: "make"
-        }, {
-            headerName: "Model", field: "model"
-        }, {
-            headerName: "Price", field: "price"
-        }],
-        rowData: [{
-            make: "Toyota", model: "Celica", price: 35000
-        }, {
-            make: "Ford", model: "Mondeo", price: 32000
-        }, {
-            make: "Porsche", model: "Boxter", price: 72000
-        }]
-        }
+
+           }
 	}
 
     render() {
         return (
         <>
-        {console.log(this.props.data)}
         <div 
             className="ag-theme-balham"
             style={{ 
             height: '500px', 
             width: '600px' }} 
         >
+            {console.log(this.props.data[0])}
             <AgGridReact
-            columnDefs={this.state.columnDefs}
-            rowData={this.state.rowData}>
+            columnDefs={[{
+                headerName: "User", field: "user"
+                }, {
+                headerName: "EucValue", field: "eucValue"
+                }, {
+                headerName: "Recommendation", field: "value", cellRenderer: user => { return user.data.recommendationOrder.length !== 0 ? user.data.recommendationOrder[0].Title : 'None'}
+            }]}
+            rowData={this.props.data}>
             </AgGridReact>
         </div>
         </>

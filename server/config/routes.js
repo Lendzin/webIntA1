@@ -23,6 +23,10 @@ module.exports.routes = {
     view: 'assets/index.html'
   },
   //ITEM CONTROLLER
+  'get /item/users': {
+    controller: 'ItemsController',
+    action: 'getUsers'
+  },
 
   'get /item/euclidean/:user': {
     controller: 'ItemsController',

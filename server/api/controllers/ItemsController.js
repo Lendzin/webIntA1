@@ -11,6 +11,10 @@ const pathUsers = './../../movies_example/users.csv';
 
 module.exports = {
 
+  getUsers: async function(req, res) {
+    return res.status(200).send(await csv({delimiter: ';'}).fromFile(__dirname + pathUsers));
+  },
+
   euclidean: async function(req, res) {
     const user = req.param('user');
 
@@ -27,20 +31,45 @@ module.exports = {
         let userRatedMovies = getRatedMoviesForUser(userId, ratingsJson);
         let otherUsers = getOtherUsers(user, usersJson);
 
-        let results = [];
+        let userMoviesNotRated = getMoviesNotRated(userRatedMovies, moviesJson);
 
-        otherUsers.forEach(user =>{
+        let results = [];
+        let sumSimiliarty = 0;
+        let sumWeighted = 0;
+
+        otherUsers.forEach(user => {
           let eucValue = getEuclidean(userId, user.UserId, ratingsJson);
           let userName = getUserName(user.UserId, usersJson);
           let otherUserRatedMovies = getRatedMoviesForUser(user.UserId, ratingsJson);
           let moviesNotRated = getMoviesNotRated(userRatedMovies, otherUserRatedMovies);
+          let weightedScores = getWeightedScoreForMovies(eucValue, moviesNotRated)
           moviesNotRated.sort(sortHighestRatingFirst);
+          sumSimiliarty += eucValue;
           let recommendationOrder = getMoviesWithNames(moviesNotRated, moviesJson);
-          results.push({user: userName, eucValue: eucValue, recommendationOrder: recommendationOrder})
+          results.push({user: userName, eucValue: eucValue, recommendationOrder: recommendationOrder, weightedScores: weightedScores})
           results.sort(sortHighestEuclValueFirst);
         });
 
-        return res.status(200).json(results);
+        
+        let weightedMovieScores = userMoviesNotRated.map(movie => {
+          let weightedScore = 0;
+          let sim = sumSimiliarty;
+          results.forEach(user => {
+            if (user.weightedScores.filter(mov => mov.MovieId === movie.MovieId)) {
+              let actualMovie = user.weightedScores.find(movie2 => movie2.MovieId === movie.MovieId);
+              if (actualMovie) {
+                weightedScore+= actualMovie.WeightedScore;
+              } else {
+                sim -= user.eucValue;
+              }
+              
+            }
+          });
+          return {MovieId: getMovieFromId(movie.MovieId, moviesJson), RecommendValue: weightedScore/sim}
+        });
+        weightedMovieScores.sort(sortHighestRecommendValue);
+
+        return res.status(200).json({recommended: weightedMovieScores, result: results});
       }
     }
 
@@ -55,6 +84,23 @@ module.exports = {
     return res.status(200).json({test: 'userbased'});
   },
 };
+
+function getWeightedScoreForMovies(eucValue, moviesNotRated) {
+  return moviesNotRated.map(movie => {
+    return {MovieId: movie.MovieId, WeightedScore: movie.Rating*eucValue}
+  });
+}
+
+function sortHighestRecommendValue(a, b) {
+  if (a.RecommendValue > b.RecommendValue) {
+    return -1;
+  } else {
+    if (a.RecommendValue < b.RecommendValue) {
+      return 1;
+    }
+    return 0;
+  }
+}
 
 
 function sortHighestEuclValueFirst(a, b) {
