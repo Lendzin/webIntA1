@@ -3,7 +3,6 @@ import { Button, Row, Col, Container, Form } from 'react-bootstrap';
 import UserSimIndexTable from './UserSimIndexTable';
 import RecommendationTable from './RecommendationTable'
 
-const uuid = require('uuid/v4')
 const requestUsers = async ()  => {
 		let response = await fetch(`http://localhost:1337/item/users`)
 		if (response) {
@@ -15,7 +14,6 @@ const requestUsers = async ()  => {
 export default class StartPage extends Component {
 	constructor(props) {
 		super(props);
-		this.uuid = uuid();
 		this.state = {
 			algoChoice: 'euclidean',
 			sizeChoice: 'demo',
