@@ -18,7 +18,7 @@ export default class UserSimIndexTable extends Component {
         <div 
             className="ag-theme-balham"
             style={{ 
-            height: `${this.props.data.length * 40}px`, 
+            height: `${this.props.data.length !== 0 ? this.props.data.length * 31 + 40 : 0}px`, 
             width: '600px' }} 
         >
             {this.props.data.length !== 0 ? 'User and SimIndex Table:' : <span></span>}

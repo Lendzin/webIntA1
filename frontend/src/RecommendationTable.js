@@ -24,9 +24,9 @@ export default class UserSimIndexTable extends Component {
             {this.props.data.length !== 0 ? 'Recommended Movies Table:' : 'No recommendations to show...'}
             <AgGridReact
             columnDefs={[{
-                headerName: "Movie", field: "value", cellRenderer: movie => {return movie.data.MovieId.Title}
+                headerName: "Movie", field: "value", cellRenderer: movie => {return movie.data.Title}
                 }, {
-                headerName: "Id", field: "value", cellRenderer: movie => {return movie.data.MovieId.MovieId}
+                headerName: "Id", field: "value", cellRenderer: movie => {return movie.data.MovieId}
                 }, {
                 headerName: "Score", field: "RecommendValue"
             }]}

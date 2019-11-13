@@ -15,38 +15,25 @@ const pathUsersLarge = './../../movies_large/users.csv';
 module.exports = {
 
   getUsers: async function(req, res) {
-    return res.status(200).send(await csv({delimiter: ';'}).fromFile(__dirname + pathUsers));
+    return res.status(200).send(await getUsersJson('demo'));
   },
 
   getLargeUsers: async function(req, res) {
-    return res.status(200).send(await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge));
+    return res.status(200).send(await getUsersJson('large'));
   },
 
   getRecommendations: async function(req, res) {
     const user = req.param('user');
-
-    let usersJson = {};
-    if (req.options.locals.size === 'large') {
-      usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge);
-    } else {
-      usersJson = await csv({delimiter: ';'}).fromFile(__dirname + pathUsers);
-    }
+    const size = req.options.locals.size;
+    let usersJson = await getUsersJson(size);
 
     if (user) {
 
       let userId = getUserId(user, usersJson);
-      let ratingsJson = {};
-      let moviesJson = {};
 
       if ( userId !== 0) {
-        if (req.options.locals.size === 'large') {
-          ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatingsLarge);
-          moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMoviesLarge);
-        } else {
-          ratingsJson = await csv({delimiter: ';'}).fromFile(__dirname + pathRatings);
-          moviesJson= await csv({delimiter: ';'}).fromFile(__dirname + pathMovies);
-        }
-
+        let ratingsJson = await getRatingsJson(size);
+        let moviesJson = await getMoviesJson(size);
 
         let userRatedMovies = getRatedMoviesForUser(userId, ratingsJson);
         let otherUsers = getOtherUsers(user, usersJson);
@@ -59,11 +46,11 @@ module.exports = {
         otherUsers.forEach(user => {
 
           let simIndex = 0;
-          let aRatedMovies = getRatedMoviesForUser(userId, ratings);
-          let bRatedMovies = getRatedMoviesForUser(user.UserId, ratings);
+          let aRatedMovies = getRatedMoviesForUser(userId, ratingsJson);
+          let bRatedMovies = getRatedMoviesForUser(user.UserId, ratingsJson);
 
           if (req.options.locals.act === 'euclidean') {
-            simIndex = getEuclidean(aRatedMovies, bRatedMovies);
+            simIndex = getEuclidean(aRatedMovies, bRatedMovies, 'movieId');
           }
           if (req.options.locals.act === 'pearson') {
             simIndex = getPearson(aRatedMovies, bRatedMovies);
@@ -76,11 +63,10 @@ module.exports = {
           moviesNotRated.sort(sortHighestRatingFirst);
           sumSimiliarty += simIndex;
           let recommendationOrder = getMoviesWithNames(moviesNotRated, moviesJson);
-          results.push({user: userName, simIndex: simIndex, recommendationOrder: recommendationOrder, weightedScores: weightedScores})
+          results.push({user: userName, simIndex: simIndex, recommendationOrder: recommendationOrder, weightedScores: weightedScores});
           results.sort(sortHighestEuclValueFirst);
         });
 
-        
         let weightedMovieScores = userMoviesNotRated.map(movie => {
           let weightedScore = 0;
           let sim = sumSimiliarty;
@@ -96,10 +82,10 @@ module.exports = {
               } else {
                 sim -= user.simIndex;
               }
-              
             }
           });
-          return {MovieId: getMovieFromId(movie.MovieId, moviesJson), RecommendValue: weightedScore/sim}
+          let currentMovie = getMovieFromId(movie.MovieId, moviesJson)
+          return {Title: currentMovie.Title, MovieId: currentMovie.MovieId, RecommendValue: weightedScore/sim}
         });
         weightedMovieScores.sort(sortHighestRecommendValue);
 
@@ -109,11 +95,74 @@ module.exports = {
 
   },
   itembased: async function(req, res) {
+    const user = req.param('user');
+    const size = req.options.locals.size;
+    let usersJson = await getUsersJson(size);
 
+    if (user) {
 
-    return res.status(200).json({test: 'itembased'});
+      let userId = getUserId(user, usersJson);
+
+      if ( userId !== 0) {
+
+        let ratingsJson = await getRatingsJson(size);
+        let moviesJson = await getMoviesJson(size);
+        let userRatedMovies = getRatedMoviesForUser(userId, ratingsJson);
+        let moviesSimIndexValues = [];
+
+        userRatedMovies.forEach(movie => {
+          let simIndexValues = [];
+          let movieRatings = getRatingsForMovie(movie.MovieId, ratingsJson);
+          let otherMovies = getOtherMovies(movie.MovieId, moviesJson);
+          otherMovies.forEach(movie => {
+            let otherMovieRatings = getRatingsForMovie(movie.MovieId, ratingsJson);
+            simIndexValues.push({Title: movie.Title, MovieId: movie.MovieId, value: getEuclidean(movieRatings, otherMovieRatings, 'userId')});
+          });
+          moviesSimIndexValues.push({userRating: movie.Rating, Title: getMovieFromId(movie.MovieId, moviesJson).Title, MovieId: movie.MovieId, simIndexValues});
+        });
+
+        let userMoviesNotRated = getMoviesNotRated(userRatedMovies, moviesJson);
+        let simForMovies = [];
+        userMoviesNotRated.forEach(movieNotRated => {
+          let simValue = 0;
+          let wrValue = 0;
+          moviesSimIndexValues.forEach(movieRated => {
+            movieRated.simIndexValues.forEach(movie => {
+              if (movie.MovieId === movieNotRated.MovieId) {
+                simValue += movie.value;
+                wrValue += movie.value*movieRated.userRating;
+              }
+            });
+          });
+          simForMovies.push({Title: movieNotRated.Title, MovieId: movieNotRated.MovieId, RecommendValue: wrValue/simValue});
+        });
+
+        simForMovies.sort(sortHighestRecommendValue);
+        return res.status(200).json({recommended: simForMovies, result: []});
+
+      }
+    }
   },
 };
+
+
+async function getUsersJson(size) {
+  return (size === 'large') ? await csv({delimiter: ';'}).fromFile(__dirname + pathUsersLarge) : await csv({delimiter: ';'}).fromFile(__dirname + pathUsers);
+}
+
+async function getMoviesJson(size) {
+  return (size === 'large') ? await csv({delimiter: ';'}).fromFile(__dirname + pathMoviesLarge) : await csv({delimiter: ';'}).fromFile(__dirname + pathMovies);
+}
+
+async function getRatingsJson(size) {
+  return (size === 'large') ? await csv({delimiter: ';'}).fromFile(__dirname + pathRatingsLarge) : await csv({delimiter: ';'}).fromFile(__dirname + pathRatings);
+}
+
+function getOtherMovies(id, movies) {
+  return movies.filter(movie => {
+    return movie.MovieId !== id;
+  });
+}
 
 function getWeightedScoreForMovies(simIndex, moviesNotRated) {
   return moviesNotRated.map(movie => {
@@ -257,17 +306,25 @@ function getPearson(aRatedMovies, bRatedMovies) {
   return num/den;
 }
 
-function getEuclidean(aRatedMovies, bRatedMovies) {
+function getEuclidean(aRatedMovies, bRatedMovies, action) {
 
   let sim = 0;
   let n = 0;
 
   aRatedMovies.forEach(aMovie => {
     bRatedMovies.forEach(bMovie => {
-      if (aMovie.MovieId === bMovie.MovieId) {
-        sim += Math.pow((aMovie.Rating - bMovie.Rating), 2);
-        n += 1;
+      if (action === 'movieId'){
+        if (aMovie.MovieId === bMovie.MovieId) {
+          sim += Math.pow((aMovie.Rating - bMovie.Rating), 2);
+          n += 1;
+        }
+      } else {
+        if (aMovie.UserId === bMovie.UserId) {
+          sim += Math.pow((aMovie.Rating - bMovie.Rating), 2);
+          n += 1;
+        }
       }
+
     });
   });
   return (n === 0) ? 0 : 1 / (1 + sim);

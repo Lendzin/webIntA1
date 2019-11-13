@@ -33,6 +33,16 @@ module.exports.routes = {
     action: 'getLargeUsers'
   },
 
+  'get /item/movies': {
+    controller: 'ItemsController',
+    action: 'getMovies'
+  },
+
+  'get /item/large/movies': {
+    controller: 'ItemsController',
+    action: 'getLargeMovies'
+  },
+
   'get /item/euclidean/:user': {
     controller: 'ItemsController',
     action: 'getRecommendations',
@@ -71,12 +81,18 @@ module.exports.routes = {
 
   'get /item/itembased/:user': {
     controller: 'ItemsController',
-    action: 'itembased'
+    action: 'itembased',
+    locals: {
+      size: 'demo'
+    }
   },
 
-  'get /item/userbased/:user': {
+  'get /item/large/itembased/:user': {
     controller: 'ItemsController',
-    action: 'userbased'
+    action: 'itembased',
+    locals: {
+      size: 'large'
+    }
   },
 
 

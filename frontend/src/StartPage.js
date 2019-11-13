@@ -41,33 +41,37 @@ export default class StartPage extends Component {
 		}
 	}
 
-    handleChoiceAlgo = (choice) => {
-	    const value = choice.target.value
-	    this.setState({ algoChoice: value, data: null})
-	}
-	
-	handleChoiceName = (choice) => {
-	    const value = choice.target.value
-		this.setState({ nameChoice: value, data: null})
+    handleChoiceAlgo = (event) => {
+	    const choice = event.target.value
+		this.setState({ algoChoice: choice, data: null})
 	}
 
-	handleChoiceSize = async (choice) => {
-		const value = choice.target.value
-		this.setState({users: null, sizeChoice: value, data: null})
-		if (choice.target.value === 'large') {
+	handleChoiceName = (event) => {
+	    const choice = event.target.value
+		this.setState({ nameChoice: choice, data: null})
+	}
+
+	handleChoiceSize = async (event) => {
+		const choice = event.target.value
+		this.setState({users: null, sizeChoice: choice, data: null})
+		if (choice === 'large') {
 			this.requestLargeUsers();
 		} else {
-			let users = await requestUsers();
-			if (users.length !== 0) {
-				this.setState({users: users, nameChoice: users[0].Name})
-			}
+			this.requestDemoUsers();
+		}
+	}
+
+	requestDemoUsers = async () => {
+		let users = await requestUsers();
+		if (users.length !== 0) {
+			this.setState({users: users, nameChoice: users[0].Name})
 		}
 	}
 	
     renderTable = () => {
         return (
 			<>
-			<RecommendationTable data={this.state.data.recommended.slice(1, this.state.listSize ? this.state.listSize+1 : this.state.data.recommended.length)}></RecommendationTable>
+			<RecommendationTable data={this.state.data.recommended.slice(0, this.state.listSize ? this.state.listSize : this.state.data.recommended.length)}></RecommendationTable>
 			<Row style={{ marginTop: 30, marginBottom: 10 }}></Row>
             <UserSimIndexTable data={this.state.data.result}> </UserSimIndexTable>
 			</>
@@ -84,7 +88,7 @@ export default class StartPage extends Component {
 
     requestData = async () => {
 		let size = this.state.sizeChoice === 'large' ? 'large/' : '';
-        let response = await fetch(`http://localhost:1337/item/${size}${this.state.algoChoice}/${this.state.nameChoice}`)
+        let response = await fetch(`http://localhost:1337/item/${size}${this.state.algoChoice}/${this.state.nameChoice}`);
 		if (response) {
 			let body = await response.json();
 			this.setState({data : body})
@@ -113,6 +117,7 @@ export default class StartPage extends Component {
 							return <option key={user.UserId}>{user.Name}</option>
 						})}
 		            </Form.Control>
+
 					<Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
 
 					Choose Size:
