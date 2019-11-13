@@ -59,12 +59,14 @@ module.exports = {
         otherUsers.forEach(user => {
 
           let simIndex = 0;
+          let aRatedMovies = getRatedMoviesForUser(userId, ratings);
+          let bRatedMovies = getRatedMoviesForUser(user.UserId, ratings);
 
           if (req.options.locals.act === 'euclidean') {
-            simIndex = getEuclidean(userId, user.UserId, ratingsJson);
+            simIndex = getEuclidean(aRatedMovies, bRatedMovies);
           }
           if (req.options.locals.act === 'pearson') {
-            simIndex = getPearson(userId, user.UserId, ratingsJson);
+            simIndex = getPearson(aRatedMovies, bRatedMovies);
           }
 
           let userName = getUserName(user.UserId, usersJson);
@@ -107,10 +109,9 @@ module.exports = {
 
   },
   itembased: async function(req, res) {
+
+
     return res.status(200).json({test: 'itembased'});
-  },
-  userbased: async function(req, res) {
-    return res.status(200).json({test: 'userbased'});
   },
 };
 
@@ -129,6 +130,13 @@ function sortHighestRecommendValue(a, b) {
     }
     return 0;
   }
+}
+
+function getRatingsForMovie(id, ratings) {
+  return ratings.filter(rating => {
+    return rating.MovieId === id;
+  });
+
 }
 
 
@@ -218,9 +226,7 @@ function getMovieFromId(id, movies) {
   return (movie === undefined) ? 0 : movie;
 }
 
-function getPearson(userA, userB, ratings) {
-  let aRatedMovies = getRatedMoviesForUser(userA, ratings);
-  let bRatedMovies = getRatedMoviesForUser(userB, ratings);
+function getPearson(aRatedMovies, bRatedMovies) {
   let sum1 = 0;
   let sum2 = 0;
   let sum1Sq = 0;
@@ -251,9 +257,8 @@ function getPearson(userA, userB, ratings) {
   return num/den;
 }
 
-function getEuclidean(userA, userB, ratings) {
-  let aRatedMovies = getRatedMoviesForUser(userA, ratings);
-  let bRatedMovies = getRatedMoviesForUser(userB, ratings);
+function getEuclidean(aRatedMovies, bRatedMovies) {
+
   let sim = 0;
   let n = 0;
 
