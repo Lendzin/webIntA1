@@ -21,7 +21,7 @@ export default class UserSimIndexTable extends Component {
             height: `${this.props.data.length * 40}px`, 
             width: '600px' }} 
         >
-            {this.props.data.length !== 0 ? <p>User and SimIndex Table:</p> : <span></span>}
+            {this.props.data.length !== 0 ? 'User and SimIndex Table:' : <span></span>}
             <AgGridReact
             columnDefs={[{
                 headerName: "User", field: "user"

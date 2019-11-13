@@ -18,10 +18,10 @@ export default class UserSimIndexTable extends Component {
         <div 
             className="ag-theme-balham"
             style={{ 
-            height: `${this.props.data.length * 33}px`, 
+            height: `${this.props.data.length !== 0 ? this.props.data.length * 31 + 40 : 0}px`, 
             width: '600px' }} 
         >
-            {this.props.data.length !== 0 ? <p>Recommended Movies Table:</p> : <span></span>}
+            {this.props.data.length !== 0 ? 'Recommended Movies Table:' : 'No recommendations to show...'}
             <AgGridReact
             columnDefs={[{
                 headerName: "Movie", field: "value", cellRenderer: movie => {return movie.data.MovieId.Title}

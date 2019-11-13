@@ -22,13 +22,14 @@ export default class StartPage extends Component {
 			nameChoice: null,
 			data: null, 
 			users: null,
+			listSize: 0,
 		};
 	}
 
 	async componentDidMount() {
 		let users = await requestUsers();
 		if (users.length !== 0) {
-			this.setState({nameChoice: users[0].Name, users: users})
+			this.setState({users: users, nameChoice: users[0].Name})
 		}
 	}
 
@@ -58,7 +59,7 @@ export default class StartPage extends Component {
 		} else {
 			let users = await requestUsers();
 			if (users.length !== 0) {
-				this.setState({nameChoice: users[0].Name, users: users})
+				this.setState({users: users, nameChoice: users[0].Name})
 			}
 		}
 	}
@@ -66,11 +67,18 @@ export default class StartPage extends Component {
     renderTable = () => {
         return (
 			<>
-			<RecommendationTable data={this.state.data.recommended}></RecommendationTable>
+			<RecommendationTable data={this.state.data.recommended.slice(1, this.state.listSize ? this.state.listSize+1 : this.state.data.recommended.length)}></RecommendationTable>
 			<Row style={{ marginTop: 30, marginBottom: 10 }}></Row>
             <UserSimIndexTable data={this.state.data.result}> </UserSimIndexTable>
 			</>
         )
+	}
+
+	setListSize = (size)  => {
+		if (size < 0) {
+			size = 0;
+		}
+		this.setState({listSize: size})
 	}
 
 
@@ -95,7 +103,6 @@ export default class StartPage extends Component {
 						<option>euclidean</option>
                         <option>pearson</option>
                         <option>itembased</option>
-						<option>userbased</option>
 		            </Form.Control>
 				</Form>
 				<Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
@@ -107,16 +114,26 @@ export default class StartPage extends Component {
 						})}
 		            </Form.Control>
 					<Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
+
 					Choose Size:
 					<Form.Control defaultValue={this.state.sizeChoice} as="select" onChange={this.handleChoiceSize} style={{ width: 200 }}>
 						<option>example</option>
 						<option>large</option>
 		            </Form.Control>
+
+					<Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
+
+						<Button style={{marginRight: 10}} onClick={() => this.setListSize(this.state.listSize-1)}>{'<'}</Button>
+							{'Recommendation list size: ' + this.state.listSize}
+						<Button style={{marginLeft: 10}} onClick={() => this.setListSize(this.state.listSize+1)}>{'>'}</Button>
+						{' (0 = show all)'}
+
 				</Form>
+
                 <Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
                 <Button onClick={this.requestData}>Send Request to Server</Button>
                 <Row style={{ marginTop: 10, marginBottom: 10 }}></Row>
-				</>
+			</>
 		)
 	}
     
